@@ -1,0 +1,181 @@
+import numpy as np
+import pandas as pd
+
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras import regularizers
+
+import tensorflow as tf
+import tensorflow_hub as hub
+print("tensorflow version : ", tf.__version__)
+print("tensorflow_hub version : ", hub.__version__)
+
+from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score, cohen_kappa_score, roc_auc_score, confusion_matrix
+from sklearn.utils import resample
+
+MAX_NB_WORDS = 50000
+vocabulary_size=MAX_NB_WORDS
+EMBEDDING_DIM = 300
+
+TOPICS_LEN = 8
+ENTITIES_LEN = 150
+TRIPLES_LEN = 300
+
+def model_making(count, embedding_matrix, sents=False, topics=False, entities=False, triples=False):
+  learning_rate = 2e-5
+  mod_out=[]
+  mod_in=[]
+  if(sents==True):
+    input_sents = tf.keras.layers.Input(shape=(4096,),name="input_sents")
+    m1_layers = tf.keras.layers.Dense(1024, activation='relu')(input_sents)
+    m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)
+    m1_layers = tf.keras.layers.Dense(512, activation='relu')(m1_layers)
+    m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)
+    m1_layers = tf.keras.layers.Dense(128, activation='relu')(m1_layers)
+    m1_layers = tf.keras.layers.Dropout(0.4)(m1_layers)
+    m1_layers = tf.keras.layers.Dense(64, activation="relu")(m1_layers)
+    #m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)
+    #m1_layers = tf.keras.layers.Dense(32, activation="relu")(m1_layers)
+    #m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)
+    if(count==1):
+      m1_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m1_layers)
+    model_1 = tf.keras.models.Model(inputs=input_sents, outputs=m1_layers, name='sents_model')      
+    mod_out.append(model_1.output)
+    mod_in.append(input_sents)
+  if topics==True:
+    input_topics = tf.keras.layers.Input(shape=(TOPICS_LEN,), name='input_topics')
+    #m2_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=10, weights=[embedding_matrix], trainable=True, name='glove_topic_embedding')(input_topics)
+    #m2_layers = tf.keras.layers.Flatten(name='flatten_topics')(m2_layers)
+    m2_layers = tf.keras.layers.Dense(512,activation='relu', name='dense_1_topics')(input_topics)
+    m2_layers = tf.keras.layers.Dropout(0.2, name='dropout_multi_topic_1')(m2_layers)
+    m2_layers = tf.keras.layers.Dense(128,activation='relu', name='dense_2_topics')(m2_layers)
+    m2_layers = tf.keras.layers.Dropout(0.2, name='dropout_multi_topic_2')(m2_layers)
+    m2_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_3_topics')(m2_layers)
+    if(count==1):
+      m2_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m2_layers)
+    model_2 = tf.keras.models.Model(inputs=input_topics, outputs=m2_layers, name='topics_model')
+    mod_out.append(model_2.output)
+    mod_in.append(input_topics)
+  if entities==True:
+    input_entities = tf.keras.layers.Input(shape=(ENTITIES_LEN,), name='input_entities')
+    m3_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=ENTITIES_LEN, weights=[embedding_matrix], trainable=True, name='glove_entity_embedding')(input_entities)        
+
+    m3_layers= tf.keras.layers.Conv1D(32, 9, activation='relu', name='conv1d_1_ent')(m3_layers)
+    m3_layers = tf.keras.layers.MaxPooling1D(4, name='maxpool1d_1_ent')(m3_layers)
+    m3_layers = tf.keras.layers.Dropout(0.5, name='dropout_1_ent')(m3_layers)
+    #m3_layers = tf.keras.layers.Dropout(0.2)(m3_layers)
+    m3_layers = tf.keras.layers.Flatten(name='flatten_entities')(m3_layers)
+    #m3_layers = tf.keras.layers.Dense(1024,activation='relu', name='dense_3_entities_1')(m3_layers)
+    #m3_layers = tf.keras.layers.Dropout(0.4)(m3_layers)
+    m3_layers = tf.keras.layers.Dense(512,activation='relu', name='dense_3_entities_2')(m3_layers)
+    m3_layers = tf.keras.layers.Dropout(0.4)(m3_layers)
+    m3_layers = tf.keras.layers.Dense(128,activation='relu',  kernel_regularizer="l1", name='dense_3_entities_5')(m3_layers)
+    m3_layers = tf.keras.layers.Dropout(0.3)(m3_layers)
+    m3_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_3_entities_3')(m3_layers)
+    #kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4), bias_regularizer=regularizers.l2(1e-4), activity_regularizer=regularizers.l2(1e-5)
+    #m3_layers = tf.keras.layers.Dropout(0.2)(m3_layers)
+    if(count==1):
+      m3_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m3_layers)
+    model_3 = tf.keras.models.Model(inputs=input_entities, outputs=m3_layers)
+    mod_out.append(model_3.output)
+    mod_in.append(input_entities)
+  if triples==True:
+    input_triples = tf.keras.layers.Input(shape=(TRIPLES_LEN,), name='input_triples')
+    m4_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=True, name='glove_triple_embedding')(input_triples)
+    m4_layers= tf.keras.layers.Conv1D(32, 9, activation='relu', name='conv1d_1_triples')(m4_layers)
+    m4_layers = tf.keras.layers.MaxPooling1D(4, name='maxpool1d_1_triples')(m4_layers)
+    m4_layers = tf.keras.layers.Dropout(0.2, name='dropout_1_triples')(m4_layers)
+    
+    #m4_layers = tf.keras.layers.Dropout(0.2)(m4_layers)
+    m4_layers = tf.keras.layers.Flatten(name='flatten_triples')(m4_layers)
+
+    #m4_layers = tf.keras.layers.Dropout(0.4)(m4_layers)
+    #m4_layers = tf.keras.layers.Dense(1024,activation='relu', name='dense_4_triples_4')(m4_layers)
+    #m4_layers = tf.keras.layers.Dropout(0.5)(m4_layers)
+    m4_layers = tf.keras.layers.Dense(512,activation='relu', name='dense_4_triples_1')(m4_layers)
+    m4_layers = tf.keras.layers.Dropout(0.5)(m4_layers)
+    m4_layers = tf.keras.layers.Dense(128,activation='relu',kernel_regularizer="l1" , name='dense_4_triples_2')(m4_layers)
+    m4_layers = tf.keras.layers.Dropout(0.5)(m4_layers)
+    m4_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_4_triples_3')(m4_layers)
+    #m4_layers = tf.keras.layers.Dropout(0.2)(m4_layers)
+
+    '''input_triples = tf.keras.layers.Input(shape=(None,), name='input_triples')
+    m4_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=True, name='glove_triple_embedding')(input_triples)
+    m4_layers= tf.keras.layers.LSTM(256, kernel_regularizer="l1" ,name='lstm_1_triples')(m4_layers)
+    m4_layers= tf.keras.layers.Dropout(0.5)(m4_layers)'''
+
+    if(count==1):
+      m4_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m4_layers)
+    model_4 = tf.keras.models.Model(inputs=input_triples, outputs=m4_layers)
+    mod_out.append(model_4.output)
+    mod_in.append(input_triples)
+  
+  if (count>1):
+    model_cat = tf.keras.layers.concatenate(mod_out)
+    model_cat = tf.keras.layers.Dense(32, activation="relu", name='dense_out')(model_cat)
+    model_cat = tf.keras.layers.Dropout(0.2)(model_cat)
+    model_cat = tf.keras.layers.Dense(2, activation='softmax', name='predictions')(model_cat)
+    model = tf.keras.models.Model(mod_in, model_cat, name='Model_Multi')
+  else:
+    if sents==True:
+      model=model_1
+    if topics==True:
+      model=model_2 
+    if entities==True:
+      model=model_3
+    if triples==True:
+      model=model_4
+ 
+  optimiser = tf.keras.optimizers.Adam(learning_rate=learning_rate, epsilon=1e-08)
+  #ce = tf.keras.losses.BinaryCrossentropy()
+  ce = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+
+  model.compile(loss=ce, optimizer=optimiser, metrics=['accuracy'])
+
+  #model.summary()
+  return model
+
+def compute_metrics(model, X_test, Y_test):
+    yhat_probs = model.predict(X_test, verbose=0)
+    #yhat_classes = model.predict_classes(X_test, verbose=0)
+
+    Y_test_bin=[]
+
+    for y_bin in Y_test:
+        if (y_bin[0] == 1):
+            Y_test_bin.append(0)
+        else:
+            Y_test_bin.append(1)
+    #Y_test_bin = Y_test
+            
+    yhat_classes = np.argmax(yhat_probs,axis=1)
+
+    print ("Accuracy|Precision|Recall|F1 score|Kappa|ROC AUC|")
+    # accuracy: (tp + tn) / (p + n)
+    accuracy = accuracy_score(Y_test_bin, yhat_classes)
+    #print('|%f|' % accuracy)
+    # precision tp / (tp + fp)
+    precision = precision_score(Y_test_bin, yhat_classes)
+    #print('%f|' % precision)
+    # recall: tp / (tp + fn)
+    recall = recall_score(Y_test_bin, yhat_classes)
+    #print('%f|' % recall)
+    # f1: 2 tp / (2 tp + fp + fn)
+    f1 = f1_score(Y_test_bin, yhat_classes)
+    #print('%f|' % f1)
+
+    # kappa
+    kappa = cohen_kappa_score(Y_test_bin, yhat_classes)
+    #print('%f|' % kappa)
+    # ROC AUC
+    auc = roc_auc_score(Y_test, yhat_probs)
+    print('%f\t%f\t%f\t%f\t%f\t%f' %(accuracy,precision,recall,f1,kappa,auc))
+    # confusion matrix
+    matrix = confusion_matrix(Y_test_bin, yhat_classes)
+    print(matrix)
+    print (Y_test_bin)
+    print (yhat_classes)
+    return ([accuracy, precision, recall, f1, kappa, auc], matrix)
+
+

@@ -1,0 +1,6 @@
+GloVe/
+__pycache__/
+data/
+encoder/
+fastText/
+mallet-2.0.8
