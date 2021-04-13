@@ -45,6 +45,18 @@ Download files from these links and copy them to the data directory
   !unzip mallet-2.0.8.zip
   ```
   </li>
+  
+  <li>
+    Download GloVe embeddings from <a href="https://nlp.stanford.edu/data/wordvecs/glove.6B.zip">here</a>. Unzip and copy it to the directory.
+    
+   If you use Google Colab:
+    
+    ```
+    !wget https://nlp.stanford.edu/data/wordvecs/glove.6B.zip
+    !unzip glove*.zip
+    ```
+    
+   </li>
   </ul>
 
   <li>    
@@ -60,7 +72,9 @@ Download files from these links and copy them to the data directory
   
   Run the following python file.
 
-  `python data_preprocess.py <dataset>`. Change `<dataset>` to "energy hub" or "reuters" to select the corpus.
+  `python data_preprocess.py <dataset>` 
+  
+  Change `<dataset>` to "energy hub" or "reuters" to select the corpus.
   
   </li>
   
@@ -69,7 +83,9 @@ Download files from these links and copy them to the data directory
   
  Run the following python file.
 
-  `python train.py <dataset> <model>`. Change `<dataset>` to "energy hub" or "reuters" to select the corpus.
+  `python train.py <dataset> <model>`
+  
+  Change `<dataset>` to "energy hub" or "reuters" to select the corpus.
   
   Change `<model>` to the following options
   <ul>
@@ -77,6 +93,8 @@ Download files from these links and copy them to the data directory
     <li>topics - To use topic distributions</li>
     <li>entites - To use Glove-enriched named entities</li>
     <li>triples - To use Glove-enriched triples</li>
+    <li>text_topics - To use text and topic distributions</li>
+    <li>text_triples - To use text(GloVe) and triples(GloVe)</li>
   </ul>
   
   
