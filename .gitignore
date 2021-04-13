@@ -4,3 +4,9 @@ data/
 encoder/
 fastText/
 mallet-2.0.8
+glove.6B.100d.txt
+glove.6B.50d.txt
+glove.6B.200d.txt
+glove.6B.30d.txt
+glove.6B.zip
+mallet-2.0.8.zip

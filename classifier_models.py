@@ -17,14 +17,35 @@ MAX_NB_WORDS = 50000
 vocabulary_size=MAX_NB_WORDS
 EMBEDDING_DIM = 300
 
-TOPICS_LEN = 8
-ENTITIES_LEN = 150
-TRIPLES_LEN = 300
+TOPICS_LEN = 14
+TEXT_LEN = 1000
+ENTITIES_LEN = 1000
+TRIPLES_LEN = 1000
 
-def model_making(count, embedding_matrix, sents=False, topics=False, entities=False, triples=False):
+def model_making(count, embedding_matrix, sents=False, topics=False, entities=False, triples=False, text=False):
   learning_rate = 2e-5
   mod_out=[]
   mod_in=[]
+  dropout_rate = 0.5
+  if (text==True):
+    input_text = tf.keras.layers.Input(shape=(TEXT_LEN,), name='input_text')
+    m1_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=False, name='glove_text_embedding')(input_text)
+    m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_3')(m1_layers)
+    m1_layers = tf.keras.layers.Flatten(name='flatten_text')(m1_layers)
+    m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_4')(m1_layers)
+    m1_layers = tf.keras.layers.Dense(512, activation='relu', name='dropout_multi_text_5')(m1_layers)
+    m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
+    m1_layers = tf.keras.layers.Dense(256,activation='relu', name='dense_1_text')(m1_layers)
+    m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_1')(m1_layers)
+    m1_layers = tf.keras.layers.Dense(128,activation='relu', name='dense_2_text')(m1_layers)
+    m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_2')(m1_layers)
+    m1_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_3_text')(m1_layers)
+    if(count==1):
+      m1_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m1_layers)
+    model_1 = tf.keras.models.Model(inputs=input_text, outputs=m1_layers, name='texts_model')      
+    mod_out.append(model_1.output)
+    mod_in.append(input_text)
+
   if(sents==True):
     input_sents = tf.keras.layers.Input(shape=(4096,),name="input_sents")
     m1_layers = tf.keras.layers.Dense(1024, activation='relu')(input_sents)
@@ -58,11 +79,11 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     mod_in.append(input_topics)
   if entities==True:
     input_entities = tf.keras.layers.Input(shape=(ENTITIES_LEN,), name='input_entities')
-    m3_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=ENTITIES_LEN, weights=[embedding_matrix], trainable=True, name='glove_entity_embedding')(input_entities)        
+    m3_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=ENTITIES_LEN, weights=[embedding_matrix], trainable=False, name='glove_entity_embedding')(input_entities)        
 
-    m3_layers= tf.keras.layers.Conv1D(32, 9, activation='relu', name='conv1d_1_ent')(m3_layers)
-    m3_layers = tf.keras.layers.MaxPooling1D(4, name='maxpool1d_1_ent')(m3_layers)
-    m3_layers = tf.keras.layers.Dropout(0.5, name='dropout_1_ent')(m3_layers)
+    #m3_layers= tf.keras.layers.Conv1D(32, 9, activation='relu', name='conv1d_1_ent')(m3_layers)
+    #m3_layers = tf.keras.layers.MaxPooling1D(4, name='maxpool1d_1_ent')(m3_layers)
+    #m3_layers = tf.keras.layers.Dropout(0.5, name='dropout_1_ent')(m3_layers)
     #m3_layers = tf.keras.layers.Dropout(0.2)(m3_layers)
     m3_layers = tf.keras.layers.Flatten(name='flatten_entities')(m3_layers)
     #m3_layers = tf.keras.layers.Dense(1024,activation='relu', name='dense_3_entities_1')(m3_layers)
@@ -81,9 +102,9 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     mod_in.append(input_entities)
   if triples==True:
     input_triples = tf.keras.layers.Input(shape=(TRIPLES_LEN,), name='input_triples')
-    m4_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=True, name='glove_triple_embedding')(input_triples)
-    m4_layers= tf.keras.layers.Conv1D(32, 9, activation='relu', name='conv1d_1_triples')(m4_layers)
-    m4_layers = tf.keras.layers.MaxPooling1D(4, name='maxpool1d_1_triples')(m4_layers)
+    m4_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=False, name='glove_triple_embedding')(input_triples)
+    #m4_layers= tf.keras.layers.Conv1D(32, 9, activation='relu', name='conv1d_1_triples')(m4_layers)
+    #m4_layers = tf.keras.layers.MaxPooling1D(4, name='maxpool1d_1_triples')(m4_layers)
     m4_layers = tf.keras.layers.Dropout(0.2, name='dropout_1_triples')(m4_layers)
     
     #m4_layers = tf.keras.layers.Dropout(0.2)(m4_layers)
@@ -93,9 +114,9 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     #m4_layers = tf.keras.layers.Dense(1024,activation='relu', name='dense_4_triples_4')(m4_layers)
     #m4_layers = tf.keras.layers.Dropout(0.5)(m4_layers)
     m4_layers = tf.keras.layers.Dense(512,activation='relu', name='dense_4_triples_1')(m4_layers)
-    m4_layers = tf.keras.layers.Dropout(0.5)(m4_layers)
+    m4_layers = tf.keras.layers.Dropout(dropout_rate)(m4_layers)
     m4_layers = tf.keras.layers.Dense(128,activation='relu',kernel_regularizer="l1" , name='dense_4_triples_2')(m4_layers)
-    m4_layers = tf.keras.layers.Dropout(0.5)(m4_layers)
+    m4_layers = tf.keras.layers.Dropout(dropout_rate)(m4_layers)
     m4_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_4_triples_3')(m4_layers)
     #m4_layers = tf.keras.layers.Dropout(0.2)(m4_layers)
 
@@ -118,6 +139,8 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     model = tf.keras.models.Model(mod_in, model_cat, name='Model_Multi')
   else:
     if sents==True:
+      model=model_1
+    if text==True:
       model=model_1
     if topics==True:
       model=model_2 

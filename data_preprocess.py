@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from TopicModelling_v3 import ldatopicmodel, fetch_topics
 from TripleFormation import getTriples
-from infersent_embeddings import generate_embeddings
+
 
 import sys
 
@@ -62,11 +62,14 @@ if __name__ == "__main__":
   val= pd.read_json(r"data/"+filename+"_val.json")
   test= pd.read_json(r"data/"+filename+"_test.json")
 
-  print ("Sentence Embeddings")
+  if (sys.argv[2]=='sents'):
+    from infersent_embeddings import generate_embeddings
 
-  train['sent_embeddings'] = generate_embeddings(train)
-  val['sent_embeddings'] = generate_embeddings(val)
-  test['sent_embeddings'] = generate_embeddings(test)
+    print ("Sentence Embeddings")
+
+    train['sent_embeddings'] = generate_embeddings(train)
+    val['sent_embeddings'] = generate_embeddings(val)
+    test['sent_embeddings'] = generate_embeddings(test)
 
   print ("Topic Modelling")
 
