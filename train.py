@@ -8,6 +8,9 @@ from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from sklearn.utils import resample
 
+import argparse
+
+
 MAX_NB_WORDS = 50000
 vocabulary_size=MAX_NB_WORDS
 EMBEDDING_DIM = 300
@@ -16,6 +19,7 @@ TOPICS_LEN = 100
 TEXT_LEN = 1000
 ENTITIES_LEN = 1000
 TRIPLES_LEN = 1000
+
 
 
 import tensorflow as tf
@@ -59,7 +63,6 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
     train_inputs = train_sampled['text'].values
     train_inputs = tokenizer.texts_to_sequences(train_inputs)
     train_inputs = pad_sequences(train_inputs, maxlen=TEXT_LEN)
-    print (train_inputs)
     val_inputs = val['text'].values
     val_inputs = tokenizer.texts_to_sequences(val_inputs)
     val_inputs = pad_sequences(val_inputs, maxlen=TEXT_LEN)
@@ -70,7 +73,6 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
   ##if only topics are selected
   if (topics==True and entities==False and triples==False and sents==False):
     train_inputs = train_sampled['topic_probs'].values
-    print (train_inputs)
     val_inputs = val['topic_probs'].values
     test_inputs = test['topic_probs'].values
 
@@ -79,7 +81,6 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
     train_inputs = train_sampled['entities_text'].values
     train_inputs = tokenizer.texts_to_sequences(train_inputs)
     train_inputs = pad_sequences(train_inputs, maxlen=ENTITIES_LEN)
-    print (train_inputs)
     val_inputs = val['entities_text'].values
     val_inputs = tokenizer.texts_to_sequences(val_inputs)
     val_inputs = pad_sequences(val_inputs, maxlen=ENTITIES_LEN)
@@ -198,9 +199,11 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
   val_result = tf.keras.utils.to_categorical(val['relevance'], num_classes=2)
   test_result = tf.keras.utils.to_categorical(test['relevance'], num_classes=2)
 
-  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text)
+  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=True)
   
-  model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']))
+  es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=10)
+  model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']), callbacks=[es])
+  tf.keras.utils.plot_model(model, to_file='model_plots/'+name+'.png', show_shapes=True, show_layer_names=True)
   
   accr = model.evaluate(test_inputs, test['relevance'])
   metrics, matrix=compute_metrics(model, test_inputs, test_result) 
@@ -239,13 +242,23 @@ def typeConv(data):
 
 if __name__ == "__main__":
 
-  if sys.argv[1]=='energyhub':
+  parser = argparse.ArgumentParser()   
+  parser.add_argument('--dataset', required=True, help="Dataset required")
+  parser.add_argument('--model', required=True, help="Choose a model name")
+  
+  args = parser.parse_args()
+
+  print(f'{args.dataset} selected')
+
+  if args.dataset=='energyhub':
     filename = 'EH_infersents'
-  elif sys.argv[1] == 'reuters':
+  elif args.dataset == 'reuters':
     filename = 'Reuters_infersents'
   else:
     print ("Wrong dataset name")
     sys.exit()
+
+  model_name = args.model
 
   print ("Reading Data")
 
@@ -291,22 +304,28 @@ if __name__ == "__main__":
                                   random_state=2020) # reproducible results
 
   train_sampled = pd.concat([nd_majority_downsampled, nd_minority])
-  print (train_sampled)
-
-  model_name = sys.argv[2]
+  #print (train_sampled)
 
   if (model_name=='sents'):
     model_text = generate_model(epochs=140, batch_size=32,sents=True)
-  if (model_name=='text'):
+  elif (model_name=='text'):
     model_text = generate_model(epochs=140, batch_size=32,text=True)
-  if (model_name=='topics'):
+  elif (model_name=='topics'):
     model_text = generate_model(epochs=140, batch_size=32,topics=True)
-  if (model_name=='entities'):
+  elif (model_name=='entities'):
     model_text = generate_model(epochs=140, batch_size=32,entities=True)
-  if (model_name=='triples'):
+  elif (model_name=='triples'):
     model_text = generate_model(epochs=140, batch_size=32,triples=True)
-  if (model_name=='text_triples'):
+  elif (model_name=='text_triples'):
     model_text = generate_model(epochs=140, batch_size=32,text=True, triples=True)
-  if (model_name=='text_topics'):
+  elif (model_name=='text_topics'):
     model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True)
+  elif (model_name=='text_entities'):
+    model_text = generate_model(epochs=140, batch_size=32,text=True, entities=True)
+  elif (model_name=='text_topics_entities'):
+    model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True, entities=True)
+  elif (model_name=='text_entities_triples'):
+    model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True, entities=True)
+  else:
+    print ("Wrong model selected")
 
