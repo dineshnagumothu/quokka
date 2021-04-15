@@ -46,6 +46,16 @@ def triples_to_text(news_data):
     triples_text_new.append(text)
   return triples_text_new
 
+def get_all_topics(news_data):
+  top=[]
+  for topics in news_data['topics']:
+    for topic in topics:
+      topic=topic.replace("_", " ")
+      topic=topic.strip()
+      if topic not in top:
+        top.append(topic)
+  return top
+
 
 if __name__ == "__main__":
   if sys.argv[1]=='energyhub':
@@ -87,9 +97,11 @@ if __name__ == "__main__":
 
   print ("Forming Triples")
 
-  train['triples'] = getTriples(train)
-  val['triples'] = getTriples(val)
-  test['triples'] = getTriples(test)
+  all_topics = get_all_topics(train)
+
+  train['triples'] = getTriples(train, all_topics)
+  val['triples'] = getTriples(val, all_topics)
+  test['triples'] = getTriples(test, all_topics)
 
   train['topics_text']=topics_to_text(train)
   val['topics_text']=topics_to_text(val)

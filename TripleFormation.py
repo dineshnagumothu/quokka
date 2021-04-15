@@ -84,7 +84,9 @@ def get_relation(sent):
 
   return(span.text)
 
-def topic_entity_compare(entity, topics):
+
+
+def topic_entity_filter(entity, topics, entities):
   allgrams=[]
   allwords=[]
   for n in range(1, len(entity.split())+1):
@@ -102,31 +104,14 @@ def topic_entity_compare(entity, topics):
     if topic in allwords:
         return True
 
-  return False
-
-def entity_entity_compare(entity, entities):
-  allgrams=[]
-  allwords=[]
-  for n in range(1, len(entity.split())+1):
-    ng = ngrams(entity.split(), n)
-    for grams in ng:
-      #print (grams)
-      gram_word=""
-      allgrams.append(grams)
-      for gram in grams:
-        gram_word+=gram+" "
-      gram_word=gram_word.strip()
-      allwords.append(gram_word)
-    
   for entity in entities:
     if entity in allwords:
-        return True
-
+      return True
+  
   return False
 
-
-def getTriples(df):
-  triple_doc=[]
+def getTriples(df, topics):
+  #triple_doc=[]
   te_triple_doc=[]
   counter=0
   for doc in df['text']:
@@ -134,15 +119,6 @@ def getTriples(df):
     triples=[]
     te_triples=[]
     nlp_doc = nlp(doc)
-    topics=df.iloc[counter]['topics']
-    #print (nlp_doc.ents)
-    top=[]
-    for topic in topics:
-      topic=topic.replace("_", " ")
-      topic=topic.strip()
-      top.append(topic)
-    topics=top
-    #print (topics)
     doc_ents = {}
     for ent in nlp_doc.ents:
         doc_ents[ent.text]=ent.label_
@@ -153,16 +129,17 @@ def getTriples(df):
       #print (entities)
       relation = get_relation(sent.text)
       #print (relation)
-      triple=[entities[0], relation, entities[1]]
+      #triple=[entities[0], relation, entities[1]]
       if (entities[0]!="" and entities[1]!="" and relation!=""):
         #if((entities[0] in doc_ents.keys() or topic_entity_compare(entities[0],topics)) or (entities[1] in doc_ents.keys() or topic_entity_compare(entities[1],topics))):
-        if((entity_entity_compare(entities[0], doc_ents.keys()) or topic_entity_compare(entities[0],topics)) or (entity_entity_compare(entities[1], doc_ents.keys()) or topic_entity_compare(entities[1],topics))):
+        #if((entity_entity_compare(entities[0], doc_ents.keys()) or topic_entity_compare(entities[0],topics)) or (entity_entity_compare(entities[1], doc_ents.keys()) or topic_entity_compare(entities[1],topics))):
+        if(topic_entity_filter(entities[0], topics, doc_ents.keys()) or topic_entity_filter(entities[1], topics, doc_ents.keys())):
           te_triple=[entities[0], relation, entities[1]]
           #entities.extend(relation)
           #print (triple)
           te_triples.append(te_triple)
-        triples.append(triple)
-    triple_doc.append(triples)
+        #triples.append(triple)
+    #triple_doc.append(triples)
     te_triple_doc.append(te_triples)
     #print (triples)
     #print(len(triples))
@@ -172,6 +149,7 @@ def getTriples(df):
     counter+=1
     if (counter%25 == 0):
       print (counter)
+    
   return (te_triple_doc)
 
 #news_data_sampled['triples'] = getTriples(news_data_sampled)

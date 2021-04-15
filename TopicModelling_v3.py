@@ -178,7 +178,7 @@ def ldatopicmodel(articles, num_topics=100, optimise_model=False, start=10, limi
     print (mallet_path)
     print("Mallet Path loaded successfully")
     #start=8; limit=16; step=2
-    if(optimise_model):
+    if(optimise_model==False):
       model = gensim.models.wrappers.LdaMallet(mallet_path, corpus=corpus, num_topics=num_topics, id2word=id2word) 
       optimal_model=model
     else:
