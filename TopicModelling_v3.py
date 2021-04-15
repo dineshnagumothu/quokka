@@ -121,7 +121,7 @@ def optimalModel(model_list,coherence_values,x):
     
     return model_list[opt_number]
 
-def ldatopicmodel(articles):
+def ldatopicmodel(articles, num_topics=100, optimise_model=False, start=10, limit=110, step=10):
     data=corpusProcessing(articles)
     #convert sentences to words
     data_words = list(sent_to_words(data))
@@ -177,15 +177,19 @@ def ldatopicmodel(articles):
     mallet_path = 'mallet-2.0.8/bin/mallet' # update this path
     print (mallet_path)
     print("Mallet Path loaded successfully")
-    start=8; limit=16; step=2
-    print ("Coherence Value Computation for different number of topics")
-    #model = gensim.models.wrappers.LdaMallet(mallet_path, corpus=corpus, num_topics=10, id2word=id2word)
-    model_list, coherence_values = compute_coherence_values(mallet_path=mallet_path,dictionary=id2word, corpus=corpus, texts=data_lemmatized, start=start, limit=limit, step=step)
-    print ("Coherence computation done") 
-    x = range(start, limit, step)
-    plotCoherenece(coherence_values,x)
-    optimal_model=optimalModel(model_list,coherence_values,x)
-    print ("Optimum model considered")
+    #start=8; limit=16; step=2
+    if(optimise_model):
+      model = gensim.models.wrappers.LdaMallet(mallet_path, corpus=corpus, num_topics=num_topics, id2word=id2word) 
+      optimal_model=model
+    else:
+      print ("Coherence Value Computation for different number of topics")
+      #model = gensim.models.wrappers.LdaMallet(mallet_path, corpus=corpus, num_topics=10, id2word=id2word)
+      model_list, coherence_values = compute_coherence_values(mallet_path=mallet_path,dictionary=id2word, corpus=corpus, texts=data_lemmatized, start=start, limit=limit, step=step)
+      print ("Coherence computation done") 
+      x = range(start, limit, step)
+      plotCoherenece(coherence_values,x)
+      optimal_model=optimalModel(model_list,coherence_values,x)
+      print ("Optimum model considered")
     model_topics = optimal_model.show_topics(formatted=False)
     #pprint(optimal_model.print_topics(num_words=10))
     
