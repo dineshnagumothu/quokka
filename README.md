@@ -46,16 +46,41 @@ Download files from these links and copy them to the data directory
   ```
   </li>
   
-  <li>
-    Download GloVe embeddings from <a href="https://nlp.stanford.edu/data/wordvecs/glove.6B.zip">here</a>. Unzip and copy it to the directory.
+  <li>Download GloVe embeddings from <a href="https://nlp.stanford.edu/data/wordvecs/glove.6B.zip">here</a>. Unzip and copy it to the directory.
     
    If you use Google Colab:
+   
+   ```
+   !wget https://nlp.stanford.edu/data/wordvecs/glove.6B.zip
+   !unzip glove*.zip
+   ```
+   </li>
+   <li>
+   If you choose to build triples with Stanford OpenIE
     
-    ```
-    !wget https://nlp.stanford.edu/data/wordvecs/glove.6B.zip
-    !unzip glove*.zip
-    ```
-    
+   Install Stanza: `pip install stanza`
+
+   Run the following code from python command shell 
+   
+   To run the Python Shell, open the command prompt or power shell on Windows and terminal window on mac, write python and press enter (or) you can use Jupyter Notebook (you can follow the same with Google Colab).
+  
+  Change corenlp_dir to a physical path on your machine. This will be the corenlp installation directory.
+  
+   ```
+   import stanza
+
+   # Download the Stanford CoreNLP package with Stanza's installation command
+   # This'll take several minutes, depending on the network speed
+   
+   corenlp_dir = 'path/to/install/corenlp'
+   stanza.install_corenlp(dir=corenlp_dir)
+
+   # Set the CORENLP_HOME environment variable to point to the installation location
+   
+   import os
+   os.environ["CORENLP_HOME"] = corenlp_dir
+   ```
+   
    </li>
   </ul>
 
