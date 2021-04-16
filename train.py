@@ -199,10 +199,10 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
   val_result = tf.keras.utils.to_categorical(val['relevance'], num_classes=2)
   test_result = tf.keras.utils.to_categorical(test['relevance'], num_classes=2)
 
-  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=True)
+  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False)
   
-  es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=10)
-  model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']), callbacks=[es])
+  es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=5)
+  model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']))
   tf.keras.utils.plot_model(model, to_file='model_plots/'+name+'.png', show_shapes=True, show_layer_names=True)
   
   accr = model.evaluate(test_inputs, test['relevance'])
@@ -326,6 +326,8 @@ if __name__ == "__main__":
     model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True, entities=True)
   elif (model_name=='text_entities_triples'):
     model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True, entities=True)
+  elif (model_name=='sents_triples'):
+    model_text = generate_model(epochs=140, batch_size=32,sents=True, triples=True)
   else:
     print ("Wrong model selected")
 

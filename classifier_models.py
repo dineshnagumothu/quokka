@@ -56,8 +56,8 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     if(count==1):
       m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
       m1_layers = tf.keras.layers.Dense(256, activation='relu')(m1_layers)
-      m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
-      m1_layers = tf.keras.layers.Dense(128, activation='relu')(m1_layers)
+      #m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
+      #m1_layers = tf.keras.layers.Dense(128, activation='relu')(m1_layers)
       m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
       m1_layers = tf.keras.layers.Dense(64, activation="relu")(m1_layers)
       #m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)

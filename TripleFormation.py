@@ -110,7 +110,7 @@ def topic_entity_filter(entity, topics, entities):
   
   return False
 
-def getTriples(df, topics):
+def getTriples(df, topics, client=None):
   #triple_doc=[]
   te_triple_doc=[]
   counter=0
@@ -125,27 +125,27 @@ def getTriples(df, topics):
     #print (doc_ents)
     for sent in nlp_doc.sents:
       #print (sent.text)
-      entities = get_entities(sent)
-      #print (entities)
-      relation = get_relation(sent.text)
-      #print (relation)
-      #triple=[entities[0], relation, entities[1]]
-      if (entities[0]!="" and entities[1]!="" and relation!=""):
-        #if((entities[0] in doc_ents.keys() or topic_entity_compare(entities[0],topics)) or (entities[1] in doc_ents.keys() or topic_entity_compare(entities[1],topics))):
-        #if((entity_entity_compare(entities[0], doc_ents.keys()) or topic_entity_compare(entities[0],topics)) or (entity_entity_compare(entities[1], doc_ents.keys()) or topic_entity_compare(entities[1],topics))):
-        if(topic_entity_filter(entities[0], topics, doc_ents.keys()) or topic_entity_filter(entities[1], topics, doc_ents.keys())):
-          te_triple=[entities[0], relation, entities[1]]
-          #entities.extend(relation)
-          #print (triple)
-          te_triples.append(te_triple)
-        #triples.append(triple)
-    #triple_doc.append(triples)
+      if client is not None:
+        entities=[]
+        document = client.annotate(sent.text)
+        for sentence in document.sentence:
+          triples = sentence.openieTriple
+          for tr in triples:
+            entities.append(tr.subject)
+            entities.append(tr.object)
+            relation=tr.relation
+            if (entities[0]!="" and entities[1]!="" and relation!=""):
+              if(topic_entity_filter(entities[0], topics, doc_ents.keys()) or topic_entity_filter(entities[1], topics, doc_ents.keys())):
+                te_triple=[entities[0], relation, entities[1]]
+                te_triples.append(te_triple)
+      else:
+        entities = get_entities(sent)
+        relation = get_relation(sent.text)
+        if (entities[0]!="" and entities[1]!="" and relation!=""):
+          if(topic_entity_filter(entities[0], topics, doc_ents.keys()) or topic_entity_filter(entities[1], topics, doc_ents.keys())):
+            te_triple=[entities[0], relation, entities[1]]
+            te_triples.append(te_triple)
     te_triple_doc.append(te_triples)
-    #print (triples)
-    #print(len(triples))
-    #print ("te")
-    #print (te_triples)
-    #print(len(te_triples))
     counter+=1
     if (counter%25 == 0):
       print (counter)
