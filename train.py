@@ -20,7 +20,7 @@ TEXT_LEN = 1000
 ENTITIES_LEN = 1000
 TRIPLES_LEN = 1000
 
-
+triple_col = 'openie_triple_text'
 
 import tensorflow as tf
 
@@ -90,13 +90,13 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
 
   ##if only triples are selected
   elif (triples==True and topics==False and entities==False and sents==False):
-    train_inputs = train_sampled['triple_text'].values
+    train_inputs = train_sampled[triple_col].values
     train_inputs = tokenizer.texts_to_sequences(train_inputs)
     train_inputs = pad_sequences(train_inputs, maxlen=TRIPLES_LEN)
-    val_inputs = val['triple_text'].values
+    val_inputs = val[triple_col].values
     val_inputs = tokenizer.texts_to_sequences(val_inputs)
     val_inputs = pad_sequences(val_inputs, maxlen=TRIPLES_LEN)
-    test_inputs = test['triple_text'].values
+    test_inputs = test[triple_col].values
     test_inputs = tokenizer.texts_to_sequences(test_inputs)
     test_inputs = pad_sequences(test_inputs, maxlen=TRIPLES_LEN)
   
@@ -177,19 +177,19 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
       test_inputs.append(test_entity_inputs)
 
     if (triples):
-      train_triple_inputs=train_sampled['triple_text'].values
+      train_triple_inputs=train_sampled[triple_col].values
       train_triple_inputs = tokenizer.texts_to_sequences(train_triple_inputs)
       train_triple_inputs = pad_sequences(train_triple_inputs, maxlen=TRIPLES_LEN)
       train_triple_inputs = typeConv(train_triple_inputs)
       train_inputs.append(train_triple_inputs)
 
-      val_triple_inputs=val['triple_text'].values
+      val_triple_inputs=val[triple_col].values
       val_triple_inputs = tokenizer.texts_to_sequences(val_triple_inputs)
       val_triple_inputs = pad_sequences(val_triple_inputs, maxlen=TRIPLES_LEN)
       val_triple_inputs = typeConv(val_triple_inputs)
       val_inputs.append(val_triple_inputs)
 
-      test_triple_inputs=test['triple_text'].values
+      test_triple_inputs=test[triple_col].values
       test_triple_inputs = tokenizer.texts_to_sequences(test_triple_inputs)
       test_triple_inputs = pad_sequences(test_triple_inputs, maxlen=TRIPLES_LEN)
       test_triple_inputs = typeConv(test_triple_inputs)
@@ -201,8 +201,8 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
 
   model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False)
   
-  es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=5)
-  model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']))
+  es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=5, restore_best_weights=True)
+  model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']), callbacks=[es])
   tf.keras.utils.plot_model(model, to_file='model_plots/'+name+'.png', show_shapes=True, show_layer_names=True)
   
   accr = model.evaluate(test_inputs, test['relevance'])
