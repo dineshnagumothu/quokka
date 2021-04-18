@@ -21,6 +21,7 @@ ENTITIES_LEN = 1000
 TRIPLES_LEN = 1000
 
 triple_col = 'openie_triple_text'
+sent_col = 'sent_embeddings'
 
 import tensorflow as tf
 
@@ -201,8 +202,11 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
 
   model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False)
   
-  es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=5, restore_best_weights=True)
-  model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']), callbacks=[es])
+  es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=10, restore_best_weights=True)
+  if(sents==True and count<=2):
+    model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']))
+  else:
+    model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']), callbacks=[es])
   tf.keras.utils.plot_model(model, to_file='model_plots/'+name+'.png', show_shapes=True, show_layer_names=True)
   
   accr = model.evaluate(test_inputs, test['relevance'])
@@ -269,9 +273,9 @@ if __name__ == "__main__":
   tokenizer = Tokenizer(num_words=MAX_NB_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\]^`{|}~', lower=True)
 
 
-  token_text=train['triple_text'].values.tolist()
-  token_text.extend(val['triple_text'].values)
-  token_text.extend(test['triple_text'].values.tolist())
+  token_text=train[triple_col].values.tolist()
+  token_text.extend(val[triple_col].values)
+  token_text.extend(test[triple_col].values.tolist())
 
   token_text.extend(train['topics_text'].values)
   token_text.extend(val['topics_text'].values)
@@ -307,7 +311,7 @@ if __name__ == "__main__":
   #print (train_sampled)
 
   if (model_name=='sents'):
-    model_text = generate_model(epochs=140, batch_size=32,sents=True)
+    model_text = generate_model(epochs=300, batch_size=32,sents=True)
   elif (model_name=='text'):
     model_text = generate_model(epochs=140, batch_size=32,text=True)
   elif (model_name=='topics'):
@@ -324,10 +328,19 @@ if __name__ == "__main__":
     model_text = generate_model(epochs=140, batch_size=32,text=True, entities=True)
   elif (model_name=='text_topics_entities'):
     model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True, entities=True)
+  elif (model_name=='text_topics_triples'):
+    model_text = generate_model(epochs=140, batch_size=32,text=True, triples=True, topics=True)
   elif (model_name=='text_entities_triples'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True, entities=True)
+    model_text = generate_model(epochs=140, batch_size=32,text=True, triples=True, entities=True)
+  elif (model_name=='text_topics_entities_triples'):
+    model_text = generate_model(epochs=140, batch_size=32,text=True, entities=True, triples=True, topics=True)
+
+  elif (model_name=='sents_topics'):
+    model_text = generate_model(epochs=300, batch_size=32,sents=True, topics=True)
+  elif (model_name=='sents_entities'):
+    model_text = generate_model(epochs=300, batch_size=32,sents=True, entities=True)
   elif (model_name=='sents_triples'):
-    model_text = generate_model(epochs=140, batch_size=32,sents=True, triples=True)
+    model_text = generate_model(epochs=300, batch_size=32,sents=True, triples=True)
   else:
     print ("Wrong model selected")
 

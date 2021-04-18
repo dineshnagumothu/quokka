@@ -4,6 +4,7 @@ import pandas as pd
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras import regularizers
+from tensorflow import keras
 
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -27,6 +28,7 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
   mod_out=[]
   mod_in=[]
   dropout_rate = 0.3
+  dropout_rate_2 = 0.2
   if (text==True):
     input_text = tf.keras.layers.Input(shape=(TEXT_LEN,), name='input_text')
     m1_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=fine_tune, name='glove_text_embedding')(input_text)
@@ -104,7 +106,12 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     m4_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_1_triples')(m4_layers)
     m4_layers = tf.keras.layers.Flatten(name='flatten_triples')(m4_layers)
     m4_layers = tf.keras.layers.Dropout(dropout_rate, name='droput_1_triples')(m4_layers)
-    m4_layers = tf.keras.layers.Dense(512,activation='relu', name='dense_4_triples_1')(m4_layers)
+    if sents==True:
+      m4_layers = tf.keras.layers.Dense(512,activation='relu', kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+      bias_regularizer=regularizers.l2(1e-4),
+      name='dense_4_triples_1')(m4_layers)
+    else:
+      m4_layers = tf.keras.layers.Dense(512,activation='relu', name='dense_4_triples_1')(m4_layers)
     if(count==1):
       m4_layers = tf.keras.layers.Dropout(dropout_rate)(m4_layers)
       m4_layers = tf.keras.layers.Dense(256,activation='relu', name='dense_4_triples_4')(m4_layers)
@@ -123,9 +130,15 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     #model_cat = tf.keras.layers.Dropout(dropout_rate)(model_cat)
     #model_cat = tf.keras.layers.Dense(256,activation='relu', name='dense_2_cat')(model_cat)
     model_cat = tf.keras.layers.Dropout(dropout_rate)(model_cat)
-    model_cat = tf.keras.layers.Dense(128,activation='relu', name='dense_3_cat')(model_cat)
+    if sents==True:
+      model_cat = tf.keras.layers.Dense(128,activation='relu', name='dense_3_cat')(model_cat)
+    else:
+      model_cat = tf.keras.layers.Dense(128,activation='relu', name='dense_3_cat')(model_cat)
     model_cat = tf.keras.layers.Dropout(dropout_rate)(model_cat)
-    model_cat = tf.keras.layers.Dense(64, activation="relu", name='dense_out')(model_cat)
+    if sents==True:
+      model_cat = tf.keras.layers.Dense(64, activation="relu", name='dense_out')(model_cat)
+    else:
+      model_cat = tf.keras.layers.Dense(64, activation="relu", name='dense_out')(model_cat)
     model_cat = tf.keras.layers.Dense(2, activation='softmax', name='predictions')(model_cat)
     model = tf.keras.models.Model(mod_in, model_cat, name='Model_Multi')
   else:
@@ -139,7 +152,7 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
       model=model_3
     if triples==True:
       model=model_4
- 
+  #optimiser = tf.keras.optimizers.SGD(learning_rate=learning_rate)
   optimiser = tf.keras.optimizers.Adam(learning_rate=learning_rate, epsilon=1e-08)
   #ce = tf.keras.losses.BinaryCrossentropy()
   ce = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
