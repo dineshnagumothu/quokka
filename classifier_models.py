@@ -23,7 +23,7 @@ TEXT_LEN = 1000
 ENTITIES_LEN = 1000
 TRIPLES_LEN = 1000
 
-def model_making(count, embedding_matrix, sents=False, topics=False, entities=False, triples=False, text=False, fine_tune=False):
+def model_making(count, embedding_matrix, sents=False, topics=False, entities=False, triples=False, text=False, fine_tune=False, embedding='glove'):
   learning_rate = 2e-5
   mod_out=[]
   mod_in=[]
@@ -101,17 +101,16 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     mod_out.append(model_3.output)
     mod_in.append(input_entities)
   if triples==True:
-    input_triples = tf.keras.layers.Input(shape=(TRIPLES_LEN,), name='input_triples')
-    m4_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=fine_tune, name='glove_triple_embedding')(input_triples)
-    m4_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_1_triples')(m4_layers)
-    m4_layers = tf.keras.layers.Flatten(name='flatten_triples')(m4_layers)
-    m4_layers = tf.keras.layers.Dropout(dropout_rate, name='droput_1_triples')(m4_layers)
-    if sents==True:
-      m4_layers = tf.keras.layers.Dense(512,activation='relu', kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-      bias_regularizer=regularizers.l2(1e-4),
-      name='dense_4_triples_1')(m4_layers)
+    if(embedding=='sentences'):
+      input_triples = tf.keras.layers.Input(shape=(4096,),name="input_triples")
+      m4_layers = tf.keras.layers.Dropout(dropout_rate, name='droput_1_triples')(input_triples) 
     else:
-      m4_layers = tf.keras.layers.Dense(512,activation='relu', name='dense_4_triples_1')(m4_layers)
+      input_triples = tf.keras.layers.Input(shape=(TRIPLES_LEN,), name='input_triples')
+      m4_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=fine_tune, name='glove_triple_embedding')(input_triples)
+      m4_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_1_triples')(m4_layers)
+      m4_layers = tf.keras.layers.Flatten(name='flatten_triples')(m4_layers)
+      m4_layers = tf.keras.layers.Dropout(dropout_rate, name='droput_1_triples')(m4_layers) 
+    m4_layers = tf.keras.layers.Dense(512,activation='relu', name='dense_4_triples_1')(m4_layers)
     if(count==1):
       m4_layers = tf.keras.layers.Dropout(dropout_rate)(m4_layers)
       m4_layers = tf.keras.layers.Dense(256,activation='relu', name='dense_4_triples_4')(m4_layers)

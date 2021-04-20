@@ -28,14 +28,22 @@ model.set_w2v_path(W2V_PATH)
 # Load embeddings of K most frequent words
 model.build_vocab_k_words(K=100000)
 
-def generate_embeddings(news_data):
+def generate_embeddings(news_data, col_name='text'):
   docs=[]
-  for doc in news_data['text']:
+  for doc in news_data[col_name]:
+    if col_name=='openie_triples':
+      text=''
+      for triple in doc:
+        text+=triple[0]+" "+triple[1]+" "+triple[2]+". "
+      text = text.strip()
+    
+    else:
+      text=doc  
     sents=[]
-    for sent in doc.split('.'):
+    for sent in text.split('.'):
       sents.append(sent)
     docs.append(sents)
-
+  print (docs[:1])
   print ("Number of docs:", len(docs))
 
   doc_embeddings=[]

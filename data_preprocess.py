@@ -154,6 +154,12 @@ if __name__ == "__main__":
     train['triple_text']=triples_to_text(train)
     val['triple_text']=triples_to_text(val)
     test['triple_text']=triples_to_text(test)
+  if (sys.argv[2]=='sents'):
+    train['triple_sent_embeddings'] = generate_embeddings(train, col_name='openie_triples')
+    val['triple_sent_embeddings'] = generate_embeddings(val, col_name='openie_triples')
+    test['triple_sent_embeddings'] = generate_embeddings(test, col_name='openie_triples')
+
+
 
   print ("Writing to Disk")
 

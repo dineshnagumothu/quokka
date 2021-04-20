@@ -25,7 +25,7 @@ sent_col = 'sent_embeddings'
 
 import tensorflow as tf
 
-def generate_model(epochs, batch_size,sents=False, topics=False, entities=False, triples=False, text=False):
+def generate_model(epochs, batch_size,sents=False, topics=False, entities=False, triples=False, text=False, embedding='glove'):
   count=0
   name=""
   if (sents==True):
@@ -91,15 +91,20 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
 
   ##if only triples are selected
   elif (triples==True and topics==False and entities==False and sents==False):
-    train_inputs = train_sampled[triple_col].values
-    train_inputs = tokenizer.texts_to_sequences(train_inputs)
-    train_inputs = pad_sequences(train_inputs, maxlen=TRIPLES_LEN)
-    val_inputs = val[triple_col].values
-    val_inputs = tokenizer.texts_to_sequences(val_inputs)
-    val_inputs = pad_sequences(val_inputs, maxlen=TRIPLES_LEN)
-    test_inputs = test[triple_col].values
-    test_inputs = tokenizer.texts_to_sequences(test_inputs)
-    test_inputs = pad_sequences(test_inputs, maxlen=TRIPLES_LEN)
+    if(embedding=='sentences'):
+      train_inputs = train_sampled['triple_sent_embeddings'].values
+      val_inputs=val['triple_sent_embeddings']
+      test_inputs=test['triple_sent_embeddings']
+    else:
+      train_inputs = train_sampled[triple_col].values
+      train_inputs = tokenizer.texts_to_sequences(train_inputs)
+      train_inputs = pad_sequences(train_inputs, maxlen=TRIPLES_LEN)
+      val_inputs = val[triple_col].values
+      val_inputs = tokenizer.texts_to_sequences(val_inputs)
+      val_inputs = pad_sequences(val_inputs, maxlen=TRIPLES_LEN)
+      test_inputs = test[triple_col].values
+      test_inputs = tokenizer.texts_to_sequences(test_inputs)
+      test_inputs = pad_sequences(test_inputs, maxlen=TRIPLES_LEN)
   
   ##if only sentence embeddings are selected
   elif (triples==False and topics==False and entities==False and sents==True):
@@ -178,32 +183,43 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
       test_inputs.append(test_entity_inputs)
 
     if (triples):
-      train_triple_inputs=train_sampled[triple_col].values
-      train_triple_inputs = tokenizer.texts_to_sequences(train_triple_inputs)
-      train_triple_inputs = pad_sequences(train_triple_inputs, maxlen=TRIPLES_LEN)
-      train_triple_inputs = typeConv(train_triple_inputs)
-      train_inputs.append(train_triple_inputs)
+      if(embedding=='sentences'):
+        train_sents_inputs=train_sampled['triple_sent_embeddings'].values
+        train_sents_inputs = typeConv(train_sents_inputs)
+        train_inputs.append(train_sents_inputs)
+        val_sents_inputs=val['triple_sent_embeddings'].values
+        val_sents_inputs = typeConv(val_sents_inputs)
+        val_inputs.append(val_sents_inputs)
+        test_sents_inputs=test['triple_sent_embeddings'].values
+        test_sents_inputs = typeConv(test_sents_inputs)
+        test_inputs.append(test_sents_inputs)
+      else:
+        train_triple_inputs=train_sampled[triple_col].values
+        train_triple_inputs = tokenizer.texts_to_sequences(train_triple_inputs)
+        train_triple_inputs = pad_sequences(train_triple_inputs, maxlen=TRIPLES_LEN)
+        train_triple_inputs = typeConv(train_triple_inputs)
+        train_inputs.append(train_triple_inputs)
 
-      val_triple_inputs=val[triple_col].values
-      val_triple_inputs = tokenizer.texts_to_sequences(val_triple_inputs)
-      val_triple_inputs = pad_sequences(val_triple_inputs, maxlen=TRIPLES_LEN)
-      val_triple_inputs = typeConv(val_triple_inputs)
-      val_inputs.append(val_triple_inputs)
+        val_triple_inputs=val[triple_col].values
+        val_triple_inputs = tokenizer.texts_to_sequences(val_triple_inputs)
+        val_triple_inputs = pad_sequences(val_triple_inputs, maxlen=TRIPLES_LEN)
+        val_triple_inputs = typeConv(val_triple_inputs)
+        val_inputs.append(val_triple_inputs)
 
-      test_triple_inputs=test[triple_col].values
-      test_triple_inputs = tokenizer.texts_to_sequences(test_triple_inputs)
-      test_triple_inputs = pad_sequences(test_triple_inputs, maxlen=TRIPLES_LEN)
-      test_triple_inputs = typeConv(test_triple_inputs)
-      test_inputs.append(test_triple_inputs)
+        test_triple_inputs=test[triple_col].values
+        test_triple_inputs = tokenizer.texts_to_sequences(test_triple_inputs)
+        test_triple_inputs = pad_sequences(test_triple_inputs, maxlen=TRIPLES_LEN)
+        test_triple_inputs = typeConv(test_triple_inputs)
+        test_inputs.append(test_triple_inputs)
       
   train_result = tf.keras.utils.to_categorical(train_sampled['relevance'], num_classes=2)
   val_result = tf.keras.utils.to_categorical(val['relevance'], num_classes=2)
   test_result = tf.keras.utils.to_categorical(test['relevance'], num_classes=2)
 
-  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False)
+  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False, embedding=embedding)
   
   es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=10, restore_best_weights=True)
-  if(sents==True and count<=2):
+  if(sents==True or embedding=='sentences'):
     model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']))
   else:
     model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']), callbacks=[es])
@@ -249,6 +265,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()   
   parser.add_argument('--dataset', required=True, help="Dataset required")
   parser.add_argument('--model', required=True, help="Choose a model name")
+  parser.add_argument('--embedding', help="Choose an embedding")
   
   args = parser.parse_args()
 
@@ -263,6 +280,7 @@ if __name__ == "__main__":
     sys.exit()
 
   model_name = args.model
+
 
   print ("Reading Data")
 
@@ -318,7 +336,7 @@ if __name__ == "__main__":
     model_text = generate_model(epochs=140, batch_size=32,topics=True)
   elif (model_name=='entities'):
     model_text = generate_model(epochs=140, batch_size=32,entities=True)
-  elif (model_name=='triples'):
+  elif (model_name=='triples' and args.embedding== None):
     model_text = generate_model(epochs=140, batch_size=32,triples=True)
   elif (model_name=='text_triples'):
     model_text = generate_model(epochs=140, batch_size=32,text=True, triples=True)
@@ -335,12 +353,16 @@ if __name__ == "__main__":
   elif (model_name=='text_topics_entities_triples'):
     model_text = generate_model(epochs=140, batch_size=32,text=True, entities=True, triples=True, topics=True)
 
+  elif (model_name=='triples'):
+    model_text = generate_model(epochs=300, batch_size=32,triples=True, embedding=args.embedding)
   elif (model_name=='sents_topics'):
     model_text = generate_model(epochs=300, batch_size=32,sents=True, topics=True)
   elif (model_name=='sents_entities'):
     model_text = generate_model(epochs=300, batch_size=32,sents=True, entities=True)
   elif (model_name=='sents_triples'):
-    model_text = generate_model(epochs=300, batch_size=32,sents=True, triples=True)
+    model_text = generate_model(epochs=300, batch_size=32,sents=True, triples=True, embedding=args.embedding)
+  elif (model_name=='sents_topics_triples'):
+    model_text = generate_model(epochs=300, batch_size=32,sents=True, topics=True, triples=True, embedding=args.embedding)
   else:
     print ("Wrong model selected")
 
