@@ -81,19 +81,21 @@ if __name__ == "__main__":
     filename = 'EH_infersents'
   elif sys.argv[1] == 'reuters':
     filename = 'Reuters_infersents'
+  elif sys.argv[1] == '20ng':
+    filename = '20ng'
   else:
     print ("Wrong dataset name")
     sys.exit()
 
   print ("Reading Data")
 
-  #train= pd.read_json(r"data/"+filename+"_train.json")
-  #val= pd.read_json(r"data/"+filename+"_val.json")
-  #test= pd.read_json(r"data/"+filename+"_test.json")
+  train= pd.read_json(r"data/"+filename+"_train.json")
+  val= pd.read_json(r"data/"+filename+"_val.json")
+  test= pd.read_json(r"data/"+filename+"_test.json")
 
-  train= pd.read_json(r"data/"+filename+"_train_probs.json")
-  val= pd.read_json(r"data/"+filename+"_val_probs.json")
-  test= pd.read_json(r"data/"+filename+"_test_probs.json")
+  #train= pd.read_json(r"data/"+filename+"_train_probs.json")
+  #val= pd.read_json(r"data/"+filename+"_val_probs.json")
+  #test= pd.read_json(r"data/"+filename+"_test_probs.json")
 
   if (sys.argv[2]=='sents'):
     from infersent_embeddings import generate_embeddings
@@ -106,17 +108,17 @@ if __name__ == "__main__":
 
   print ("Topic Modelling")
 
-  #train_topics, lda_model, bigram_mod, trigram_mod, id2word, doc_probs  = ldatopicmodel(train)
-  #val_topics, val_probs=fetch_topics(val, bigram_mod, trigram_mod, id2word, lda_model)
-  #test_topics, test_probs=fetch_topics(test, bigram_mod, trigram_mod, id2word, lda_model)
+  train_topics, lda_model, bigram_mod, trigram_mod, id2word, doc_probs  = ldatopicmodel(train)
+  val_topics, val_probs=fetch_topics(val, bigram_mod, trigram_mod, id2word, lda_model)
+  test_topics, test_probs=fetch_topics(test, bigram_mod, trigram_mod, id2word, lda_model)
 
-  #train['topic_probs'] = doc_probs
-  #val['topic_probs'] = val_probs
-  #test['topic_probs'] = test_probs
+  train['topic_probs'] = doc_probs
+  val['topic_probs'] = val_probs
+  test['topic_probs'] = test_probs
 
-  #train['topics']= get_terms_from_keywords(train_topics)
-  #val['topics']= get_terms_from_keywords(val_topics)
-  #test['topics']= get_terms_from_keywords(test_topics)
+  train['topics']= get_terms_from_keywords(train_topics)
+  val['topics']= get_terms_from_keywords(val_topics)
+  test['topics']= get_terms_from_keywords(test_topics)
 
   print ("Forming Triples")
 
@@ -127,9 +129,9 @@ if __name__ == "__main__":
   if(openie_triples):
     client = get_stanza_client()
     print ("Building Open IE Triples")
-    train['openie_triples'] = getTriples(train, all_topics, client)
-    val['openie_triples'] = getTriples(val, all_topics, client)
-    test['openie_triples'] = getTriples(test, all_topics, client)
+    train['openie_triples'], train['entities'] = getTriples(train, all_topics, client)
+    val['openie_triples'], val['entities'] = getTriples(val, all_topics, client)
+    test['openie_triples'], test['entities'] = getTriples(test, all_topics, client)
     # Shut down the background CoreNLP server
     client.stop()
     import time; 

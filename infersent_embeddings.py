@@ -58,6 +58,7 @@ def generate_embeddings(news_data, col_name='text'):
     adder=np.zeros(4096)
     for sent in emb:
       adder+=sent
+    adder = adder/len(emb)
     new_embeddings.append(adder)
 
   return new_embeddings

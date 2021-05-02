@@ -23,7 +23,7 @@ TEXT_LEN = 1000
 ENTITIES_LEN = 1000
 TRIPLES_LEN = 1000
 
-def model_making(count, embedding_matrix, sents=False, topics=False, entities=False, triples=False, text=False, fine_tune=False, embedding='glove'):
+def model_making(count, embedding_matrix, sents=False, topics=False, entities=False, triples=False, text=False, fine_tune=False, embedding='glove', num_labels=2):
   learning_rate = 2e-5
   mod_out=[]
   mod_in=[]
@@ -43,7 +43,7 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
       #m1_layers = tf.keras.layers.Dense(128,activation='relu', name='dense_2_text')(m1_layers)
       m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_2')(m1_layers)
       m1_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_3_text')(m1_layers)
-      m1_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m1_layers)
+      m1_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m1_layers)
     model_1 = tf.keras.models.Model(inputs=input_text, outputs=m1_layers, name='texts_model')      
     mod_out.append(model_1.output)
     mod_in.append(input_text)
@@ -63,7 +63,7 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
       m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
       m1_layers = tf.keras.layers.Dense(64, activation="relu")(m1_layers)
       #m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)
-      m1_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m1_layers)
+      m1_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m1_layers)
     model_1 = tf.keras.models.Model(inputs=input_sents, outputs=m1_layers, name='sents_model')      
     mod_out.append(model_1.output)
     mod_in.append(input_sents)
@@ -78,7 +78,7 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
       #m2_layers = tf.keras.layers.Dense(128,activation='relu', name='dense_2_topics')(m2_layers)
       m2_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_topic_2')(m2_layers)
       m2_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_3_topics')(m2_layers)
-      m2_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m2_layers)
+      m2_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m2_layers)
     model_2 = tf.keras.models.Model(inputs=input_topics, outputs=m2_layers, name='topics_model')
     mod_out.append(model_2.output)
     mod_in.append(input_topics)
@@ -96,7 +96,7 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
       #m3_layers = tf.keras.layers.Dense(128,activation='relu', name='dense_3_entities_5')(m3_layers)
       m3_layers = tf.keras.layers.Dropout(dropout_rate)(m3_layers)
       m3_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_3_entities_3')(m3_layers)
-      m3_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m3_layers)
+      m3_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m3_layers)
     model_3 = tf.keras.models.Model(inputs=input_entities, outputs=m3_layers)
     mod_out.append(model_3.output)
     mod_in.append(input_entities)
@@ -118,7 +118,7 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
       #m4_layers = tf.keras.layers.Dense(128,activation='relu', name='dense_4_triples_2')(m4_layers)
       m4_layers = tf.keras.layers.Dropout(dropout_rate)(m4_layers)
       m4_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_4_triples_3')(m4_layers)
-      m4_layers = tf.keras.layers.Dense(2, activation='softmax', name='dense_output')(m4_layers)
+      m4_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m4_layers)
     model_4 = tf.keras.models.Model(inputs=input_triples, outputs=m4_layers)
     mod_out.append(model_4.output)
     mod_in.append(input_triples)
@@ -138,7 +138,7 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
       model_cat = tf.keras.layers.Dense(64, activation="relu", name='dense_out')(model_cat)
     else:
       model_cat = tf.keras.layers.Dense(64, activation="relu", name='dense_out')(model_cat)
-    model_cat = tf.keras.layers.Dense(2, activation='softmax', name='predictions')(model_cat)
+    model_cat = tf.keras.layers.Dense(num_labels, activation='softmax', name='predictions')(model_cat)
     model = tf.keras.models.Model(mod_in, model_cat, name='Model_Multi')
   else:
     if sents==True:

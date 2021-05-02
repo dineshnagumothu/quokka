@@ -20,6 +20,8 @@ TEXT_LEN = 1000
 ENTITIES_LEN = 1000
 TRIPLES_LEN = 1000
 
+LABELS = 2
+
 triple_col = 'openie_triple_text'
 sent_col = 'sent_embeddings'
 
@@ -212,11 +214,11 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
         test_triple_inputs = typeConv(test_triple_inputs)
         test_inputs.append(test_triple_inputs)
       
-  train_result = tf.keras.utils.to_categorical(train_sampled['relevance'], num_classes=2)
-  val_result = tf.keras.utils.to_categorical(val['relevance'], num_classes=2)
-  test_result = tf.keras.utils.to_categorical(test['relevance'], num_classes=2)
+  train_result = tf.keras.utils.to_categorical(train_sampled['relevance'], num_classes=LABELS)
+  val_result = tf.keras.utils.to_categorical(val['relevance'], num_classes=LABELS)
+  test_result = tf.keras.utils.to_categorical(test['relevance'], num_classes=LABELS)
 
-  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False, embedding=embedding)
+  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False, embedding=embedding, num_labels=LABELS)
   
   es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=10, restore_best_weights=True)
   if(sents==True or embedding=='sentences'):
@@ -275,6 +277,8 @@ if __name__ == "__main__":
     filename = 'EH_infersents'
   elif args.dataset == 'reuters':
     filename = 'Reuters_infersents'
+  elif args.dataset == '20ng':
+    filename = '20ng'
   else:
     print ("Wrong dataset name")
     sys.exit()
@@ -309,24 +313,29 @@ if __name__ == "__main__":
 
   rel_count = train.relevance.value_counts()
 
-  print (rel_count)
+  #print (rel_count)
 
-  sample_size=0
-  if(rel_count[0]>rel_count[1]):
-    sample_size=rel_count[1]
+  if args.dataset != "20ng":
+    sample_size=0
+    if(rel_count[0]>rel_count[1]):
+      sample_size=rel_count[1]
+    else:
+      sample_size=rel_count[0]
+
+    nd_majority = train[train.relevance==1]
+    nd_minority = train[train.relevance==0]
+    # Downsample majority class
+    nd_majority_downsampled = resample(nd_majority, 
+                                    replace=False,    # sample without replacement
+                                    n_samples=sample_size,     # to match minority class
+                                    random_state=2020) # reproducible results
+
+    train_sampled = pd.concat([nd_majority_downsampled, nd_minority])
+    #print (train_sampled)
   else:
-    sample_size=rel_count[0]
-
-  nd_majority = train[train.relevance==1]
-  nd_minority = train[train.relevance==0]
-  # Downsample majority class
-  nd_majority_downsampled = resample(nd_majority, 
-                                  replace=False,    # sample without replacement
-                                  n_samples=sample_size,     # to match minority class
-                                  random_state=2020) # reproducible results
-
-  train_sampled = pd.concat([nd_majority_downsampled, nd_minority])
-  #print (train_sampled)
+    train_sampled=train
+    LABELS = len(rel_count)
+    print (LABELS)
 
   if (model_name=='sents'):
     model_text = generate_model(epochs=300, batch_size=32,sents=True)

@@ -113,6 +113,7 @@ def topic_entity_filter(entity, topics, entities):
 def getTriples(df, topics, client=None):
   #triple_doc=[]
   te_triple_doc=[]
+  doc_es=[]
   counter=0
   for doc in df['text']:
     #print (doc)
@@ -149,8 +150,12 @@ def getTriples(df, topics, client=None):
     counter+=1
     if (counter%25 == 0):
       print (counter)
+    es=[]
+    for e in doc_ents:
+      es.append(e)
+    doc_es.append(es)
     
-  return (te_triple_doc)
+  return (te_triple_doc, doc_es)
 
 #news_data_sampled['triples'] = getTriples(news_data_sampled)
 
