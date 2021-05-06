@@ -162,46 +162,76 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
   #model.summary()
   return model
 
-def compute_metrics(model, X_test, Y_test):
+def compute_metrics(model, X_test, Y_test, name='text'):
     yhat_probs = model.predict(X_test, verbose=0)
     #yhat_classes = model.predict_classes(X_test, verbose=0)
 
     Y_test_bin=[]
+    text=""
 
     for y_bin in Y_test:
-        if (y_bin[0] == 1):
-            Y_test_bin.append(0)
-        else:
-            Y_test_bin.append(1)
+      index = np.where(y_bin==1)
+      Y_test_bin.append(index)
     #Y_test_bin = Y_test
             
     yhat_classes = np.argmax(yhat_probs,axis=1)
+    num_labels=len(yhat_probs[0])
 
-    print ("Accuracy|Precision|Recall|F1 score|Kappa|ROC AUC|")
     # accuracy: (tp + tn) / (p + n)
     accuracy = accuracy_score(Y_test_bin, yhat_classes)
-    #print('|%f|' % accuracy)
-    # precision tp / (tp + fp)
-    precision = precision_score(Y_test_bin, yhat_classes)
-    #print('%f|' % precision)
-    # recall: tp / (tp + fn)
-    recall = recall_score(Y_test_bin, yhat_classes)
-    #print('%f|' % recall)
-    # f1: 2 tp / (2 tp + fp + fn)
-    f1 = f1_score(Y_test_bin, yhat_classes)
-    #print('%f|' % f1)
+    
+    if(num_labels==2):
+      #print('|%f|' % accuracy)
+      # precision tp / (tp + fp)
+      precision = precision_score(Y_test_bin, yhat_classes)
+      #print('%f|' % precision)
+      # recall: tp / (tp + fn)
+      recall = recall_score(Y_test_bin, yhat_classes)
+      #print('%f|' % recall)
+      # f1: 2 tp / (2 tp + fp + fn)
+      f1 = f1_score(Y_test_bin, yhat_classes)
+      #print('%f|' % f1)
 
-    # kappa
-    kappa = cohen_kappa_score(Y_test_bin, yhat_classes)
-    #print('%f|' % kappa)
-    # ROC AUC
-    auc = roc_auc_score(Y_test, yhat_probs)
-    print('%f\t%f\t%f\t%f\t%f\t%f' %(accuracy,precision,recall,f1,kappa,auc))
+      # kappa
+      kappa = cohen_kappa_score(Y_test_bin, yhat_classes)
+      #print('%f|' % kappa)
+      # ROC AUC
+      auc = roc_auc_score(Y_test, yhat_probs)
+      res_text = "Accuracy|Precision|Recall|F1 score|Kappa|ROC AUC|"
+      print (res_text)
+      print('%f\t%f\t%f\t%f\t%f\t%f' %(accuracy,precision,recall,f1,kappa,auc))
+      res_text_2=str(accuracy)+"|"+str(precision)+"|"+str(recall)+"|"+str(f1)+"|"+str(kappa)+"|"+str(auc)
+      return_metrics=[accuracy, precision, recall, f1, kappa, auc]
+    else:
+      f1_macro = f1_score(Y_test_bin, yhat_classes, average='macro')
+      f1_micro = f1_score(Y_test_bin, yhat_classes, average='micro')
+      f1_weighted = f1_score(Y_test_bin, yhat_classes, average='weighted')
+      res_text = "Accuracy|F1-Macro|F1-Micro|F1-Weighted|"
+      print (res_text)
+      res_text_2=str(accuracy)+"|"+str(f1_macro)+"|"+str(f1_micro)+"|"+str(f1_weighted)
+      print('%f\t%f\t%f\t%f' %(accuracy,f1_macro,f1_micro,f1_weighted))
+      return_metrics=[accuracy, f1_macro,f1_micro,f1_weighted]
+
     # confusion matrix
     matrix = confusion_matrix(Y_test_bin, yhat_classes)
     print(matrix)
     print (Y_test_bin)
     print (yhat_classes)
+    
+    text+=res_text+"\n"
+    text+=res_text_2+"\n"
+
+    for res in Y_test_bin:  
+      text +=str(res)+"," 
+    text=text[:-1]
+    text=text+"\n"
+    for res in yhat_classes:  
+      text +=str(res)+"," 
+    text=text[:-1]
+    text=text+"\n"
+    f = open("results/"+name+".txt", "w")
+    f.write(text)
+    f.close()
     return ([accuracy, precision, recall, f1, kappa, auc], matrix)
 
 

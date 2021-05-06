@@ -228,7 +228,7 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
   tf.keras.utils.plot_model(model, to_file='model_plots/'+name+'.png', show_shapes=True, show_layer_names=True)
   
   accr = model.evaluate(test_inputs, test['relevance'])
-  metrics, matrix=compute_metrics(model, test_inputs, test_result) 
+  metrics, matrix=compute_metrics(model, test_inputs, test_result, name=name) 
   print('%f\t%f\t%f\t%f\t%f\t%f' %(metrics[0],metrics[1],metrics[2],metrics[3],metrics[4],metrics[5]))
   print (matrix)
   return model
@@ -312,6 +312,8 @@ if __name__ == "__main__":
   word_index = tokenizer.word_index
 
   rel_count = train.relevance.value_counts()
+  LABELS = len(rel_count)
+  print ("Number of labels", LABELS)
 
   #print (rel_count)
 
@@ -334,8 +336,7 @@ if __name__ == "__main__":
     #print (train_sampled)
   else:
     train_sampled=train
-    LABELS = len(rel_count)
-    print (LABELS)
+    
 
   if (model_name=='sents'):
     model_text = generate_model(epochs=300, batch_size=32,sents=True)
