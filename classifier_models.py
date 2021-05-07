@@ -23,50 +23,54 @@ TEXT_LEN = 1000
 ENTITIES_LEN = 1000
 TRIPLES_LEN = 1000
 
-def model_making(count, embedding_matrix, sents=False, topics=False, entities=False, triples=False, text=False, fine_tune=False, embedding='glove', num_labels=2):
+SENTENCE_EMBEDDINGS = 'sentences'
+GLOVE_EMBEDDINGS = 'glove'
+
+def model_making(count, embedding_matrix, topics=False, entities=False, triples=False, text=False, fine_tune=False, embedding='glove', num_labels=2):
   learning_rate = 2e-5
   mod_out=[]
   mod_in=[]
   dropout_rate = 0.3
   dropout_rate_2 = 0.2
   if (text==True):
-    input_text = tf.keras.layers.Input(shape=(TEXT_LEN,), name='input_text')
-    m1_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=fine_tune, name='glove_text_embedding')(input_text)
-    m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_3')(m1_layers)
-    m1_layers = tf.keras.layers.Flatten(name='flatten_text')(m1_layers)
-    m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_4')(m1_layers)
-    m1_layers = tf.keras.layers.Dense(512, activation='relu', name='dropout_multi_text_5')(m1_layers)
-    if(count==1):
-      m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
-      m1_layers = tf.keras.layers.Dense(256,activation='relu', name='dense_1_text')(m1_layers)
-      #m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_1')(m1_layers)
-      #m1_layers = tf.keras.layers.Dense(128,activation='relu', name='dense_2_text')(m1_layers)
-      m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_2')(m1_layers)
-      m1_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_3_text')(m1_layers)
-      m1_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m1_layers)
-    model_1 = tf.keras.models.Model(inputs=input_text, outputs=m1_layers, name='texts_model')      
-    mod_out.append(model_1.output)
-    mod_in.append(input_text)
+    if(embedding==GLOVE_EMBEDDINGS):
+      input_text = tf.keras.layers.Input(shape=(TEXT_LEN,), name='input_text')
+      m1_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=fine_tune, name='glove_text_embedding')(input_text)
+      m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_3')(m1_layers)
+      m1_layers = tf.keras.layers.Flatten(name='flatten_text')(m1_layers)
+      m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_4')(m1_layers)
+      m1_layers = tf.keras.layers.Dense(512, activation='relu', name='dropout_multi_text_5')(m1_layers)
+      if(count==1):
+        m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
+        m1_layers = tf.keras.layers.Dense(256,activation='relu', name='dense_1_text')(m1_layers)
+        #m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_1')(m1_layers)
+        #m1_layers = tf.keras.layers.Dense(128,activation='relu', name='dense_2_text')(m1_layers)
+        m1_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_text_2')(m1_layers)
+        m1_layers = tf.keras.layers.Dense(64,activation='relu', name='dense_3_text')(m1_layers)
+        m1_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m1_layers)
+      model_1 = tf.keras.models.Model(inputs=input_text, outputs=m1_layers, name='texts_model')      
+      mod_out.append(model_1.output)
+      mod_in.append(input_text)
 
-  if(sents==True):
-    input_sents = tf.keras.layers.Input(shape=(4096,),name="input_sents")
-    #m1_layers = tf.keras.layers.Dense(1024, activation='relu')(input_sents)
-    m1_layers = tf.keras.layers.Dropout(dropout_rate)(input_sents)
-    m1_layers = tf.keras.layers.Dense(512, activation='relu', name='dense_1_sents')(m1_layers)
-    #m1_layers = tf.keras.layers.Dense(32, activation="relu")(m1_layers)
-    #m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)
-    if(count==1):
-      m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
-      m1_layers = tf.keras.layers.Dense(256, activation='relu')(m1_layers)
-      #m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
-      #m1_layers = tf.keras.layers.Dense(128, activation='relu')(m1_layers)
-      m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
-      m1_layers = tf.keras.layers.Dense(64, activation="relu")(m1_layers)
+    elif(embedding==SENTENCE_EMBEDDINGS):
+      input_sents = tf.keras.layers.Input(shape=(4096,),name="input_sents")
+      #m1_layers = tf.keras.layers.Dense(1024, activation='relu')(input_sents)
+      m1_layers = tf.keras.layers.Dropout(dropout_rate)(input_sents)
+      m1_layers = tf.keras.layers.Dense(512, activation='relu', name='dense_1_sents')(m1_layers)
+      #m1_layers = tf.keras.layers.Dense(32, activation="relu")(m1_layers)
       #m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)
-      m1_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m1_layers)
-    model_1 = tf.keras.models.Model(inputs=input_sents, outputs=m1_layers, name='sents_model')      
-    mod_out.append(model_1.output)
-    mod_in.append(input_sents)
+      if(count==1):
+        m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
+        m1_layers = tf.keras.layers.Dense(256, activation='relu')(m1_layers)
+        #m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
+        #m1_layers = tf.keras.layers.Dense(128, activation='relu')(m1_layers)
+        m1_layers = tf.keras.layers.Dropout(dropout_rate)(m1_layers)
+        m1_layers = tf.keras.layers.Dense(64, activation="relu")(m1_layers)
+        #m1_layers = tf.keras.layers.Dropout(0.2)(m1_layers)
+        m1_layers = tf.keras.layers.Dense(num_labels, activation='softmax', name='dense_output')(m1_layers)
+      model_1 = tf.keras.models.Model(inputs=input_sents, outputs=m1_layers, name='sents_model')      
+      mod_out.append(model_1.output)
+      mod_in.append(input_sents)
   if topics==True:
     input_topics = tf.keras.layers.Input(shape=(TOPICS_LEN,), name='input_topics')
     m2_layers = tf.keras.layers.Dropout(dropout_rate, name='dropout_multi_topic_4')(input_topics)
@@ -101,9 +105,10 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     mod_out.append(model_3.output)
     mod_in.append(input_entities)
   if triples==True:
-    if(embedding=='sentences'):
+    if(embedding==SENTENCE_EMBEDDINGS):
       input_triples = tf.keras.layers.Input(shape=(4096,),name="input_triples")
-      m4_layers = tf.keras.layers.Dropout(dropout_rate, name='droput_1_triples')(input_triples) 
+      m4_layers = tf.keras.layers.Dropout(dropout_rate, name='droput_1_triples')(input_triples)
+      m4_layers = tf.keras.layers.Dense(512, activation='relu', name='dense_1_triples')(m4_layers)
     else:
       input_triples = tf.keras.layers.Input(shape=(TRIPLES_LEN,), name='input_triples')
       m4_layers = tf.keras.layers.Embedding(MAX_NB_WORDS, EMBEDDING_DIM, weights=[embedding_matrix], trainable=fine_tune, name='glove_triple_embedding')(input_triples)
@@ -129,20 +134,12 @@ def model_making(count, embedding_matrix, sents=False, topics=False, entities=Fa
     #model_cat = tf.keras.layers.Dropout(dropout_rate)(model_cat)
     #model_cat = tf.keras.layers.Dense(256,activation='relu', name='dense_2_cat')(model_cat)
     model_cat = tf.keras.layers.Dropout(dropout_rate)(model_cat)
-    if sents==True:
-      model_cat = tf.keras.layers.Dense(128,activation='relu', name='dense_3_cat')(model_cat)
-    else:
-      model_cat = tf.keras.layers.Dense(128,activation='relu', name='dense_3_cat')(model_cat)
+    model_cat = tf.keras.layers.Dense(128,activation='relu', name='dense_3_cat')(model_cat)
     model_cat = tf.keras.layers.Dropout(dropout_rate)(model_cat)
-    if sents==True:
-      model_cat = tf.keras.layers.Dense(64, activation="relu", name='dense_out')(model_cat)
-    else:
-      model_cat = tf.keras.layers.Dense(64, activation="relu", name='dense_out')(model_cat)
+    model_cat = tf.keras.layers.Dense(64, activation="relu", name='dense_out')(model_cat)
     model_cat = tf.keras.layers.Dense(num_labels, activation='softmax', name='predictions')(model_cat)
     model = tf.keras.models.Model(mod_in, model_cat, name='Model_Multi')
   else:
-    if sents==True:
-      model=model_1
     if text==True:
       model=model_1
     if topics==True:
@@ -171,11 +168,15 @@ def compute_metrics(model, X_test, Y_test, name='text'):
 
     for y_bin in Y_test:
       index = np.where(y_bin==1)
-      Y_test_bin.append(index)
+      Y_test_bin.append(index[0][0])
     #Y_test_bin = Y_test
-            
+    
+   
     yhat_classes = np.argmax(yhat_probs,axis=1)
     num_labels=len(yhat_probs[0])
+
+    #print (Y_test_bin)
+    #print (yhat_classes)
 
     # accuracy: (tp + tn) / (p + n)
     accuracy = accuracy_score(Y_test_bin, yhat_classes)
@@ -198,8 +199,8 @@ def compute_metrics(model, X_test, Y_test, name='text'):
       # ROC AUC
       auc = roc_auc_score(Y_test, yhat_probs)
       res_text = "Accuracy|Precision|Recall|F1 score|Kappa|ROC AUC|"
-      print (res_text)
-      print('%f\t%f\t%f\t%f\t%f\t%f' %(accuracy,precision,recall,f1,kappa,auc))
+      #print (res_text)
+      #print('%f\t%f\t%f\t%f\t%f\t%f' %(accuracy,precision,recall,f1,kappa,auc))
       res_text_2=str(accuracy)+"|"+str(precision)+"|"+str(recall)+"|"+str(f1)+"|"+str(kappa)+"|"+str(auc)
       return_metrics=[accuracy, precision, recall, f1, kappa, auc]
     else:
@@ -207,19 +208,19 @@ def compute_metrics(model, X_test, Y_test, name='text'):
       f1_micro = f1_score(Y_test_bin, yhat_classes, average='micro')
       f1_weighted = f1_score(Y_test_bin, yhat_classes, average='weighted')
       res_text = "Accuracy|F1-Macro|F1-Micro|F1-Weighted|"
-      print (res_text)
+      #print (res_text)
       res_text_2=str(accuracy)+"|"+str(f1_macro)+"|"+str(f1_micro)+"|"+str(f1_weighted)
-      print('%f\t%f\t%f\t%f' %(accuracy,f1_macro,f1_micro,f1_weighted))
+      #print('%f\t%f\t%f\t%f' %(accuracy,f1_macro,f1_micro,f1_weighted))
       return_metrics=[accuracy, f1_macro,f1_micro,f1_weighted]
 
     # confusion matrix
     matrix = confusion_matrix(Y_test_bin, yhat_classes)
     print(matrix)
-    print (Y_test_bin)
-    print (yhat_classes)
+    #print (Y_test_bin)
+    #print (yhat_classes)
     
     text+=res_text+"\n"
-    text+=res_text_2+"\n"
+    text+=res_text_2+"\n\n"
 
     for res in Y_test_bin:  
       text +=str(res)+"," 
@@ -228,10 +229,15 @@ def compute_metrics(model, X_test, Y_test, name='text'):
     for res in yhat_classes:  
       text +=str(res)+"," 
     text=text[:-1]
-    text=text+"\n"
+    text=text+"\n\n"
+
+    if(num_labels==2):
+      target_names=['Relevant', 'Irrelevant']
+      text+=classification_report(Y_test_bin, yhat_classes, target_names=target_names)
+
     f = open("results/"+name+".txt", "w")
     f.write(text)
     f.close()
-    return ([accuracy, precision, recall, f1, kappa, auc], matrix)
+    return (return_metrics, matrix)
 
 

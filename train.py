@@ -25,14 +25,14 @@ LABELS = 2
 triple_col = 'openie_triple_text'
 sent_col = 'sent_embeddings'
 
+SENTENCE_EMBEDDINGS = 'sentences'
+GLOVE_EMBEDDINGS = 'glove'
+
 import tensorflow as tf
 
-def generate_model(epochs, batch_size,sents=False, topics=False, entities=False, triples=False, text=False, embedding='glove'):
+def generate_model(epochs, batch_size, topics=False, entities=False, triples=False, text=False, embedding=GLOVE_EMBEDDINGS, name=""):
   count=0
-  name=""
-  if (sents==True):
-    count+=1
-    name+='Sentences'
+  name+="_"
   if (text==True):
     count+=1
     name+='Text'
@@ -51,6 +51,7 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
     if(count>1):
       name+='_'
     name+='Triples'
+  name=name+"_"+embedding
   
   #name+='_'+str(i)
 
@@ -58,29 +59,37 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
   
   #logdir = os.path.join("EH_logs", name)
   #tensorboard_callback = tf.keras.callbacks.TensorBoard(logdir, histogram_freq=1)
+  if (entities==True and embedding==SENTENCE_EMBEDDINGS):
+    print ("Named Entities will use GloVe Embeddings")
+
 
   embedding_matrix= compute_embedding_matrix(tokenizer)
 
   ##if only text is selected
   if (topics==False and entities==False and triples==False and text==True):
-    train_inputs = train_sampled['text'].values
-    train_inputs = tokenizer.texts_to_sequences(train_inputs)
-    train_inputs = pad_sequences(train_inputs, maxlen=TEXT_LEN)
-    val_inputs = val['text'].values
-    val_inputs = tokenizer.texts_to_sequences(val_inputs)
-    val_inputs = pad_sequences(val_inputs, maxlen=TEXT_LEN)
-    test_inputs = test['text'].values
-    test_inputs = tokenizer.texts_to_sequences(test_inputs)
-    test_inputs = pad_sequences(test_inputs, maxlen=TEXT_LEN)
+    if(embedding==GLOVE_EMBEDDINGS):
+      train_inputs = train_sampled['text'].values
+      train_inputs = tokenizer.texts_to_sequences(train_inputs)
+      train_inputs = pad_sequences(train_inputs, maxlen=TEXT_LEN)
+      val_inputs = val['text'].values
+      val_inputs = tokenizer.texts_to_sequences(val_inputs)
+      val_inputs = pad_sequences(val_inputs, maxlen=TEXT_LEN)
+      test_inputs = test['text'].values
+      test_inputs = tokenizer.texts_to_sequences(test_inputs)
+      test_inputs = pad_sequences(test_inputs, maxlen=TEXT_LEN)
+    elif(embedding==SENTENCE_EMBEDDINGS):
+      train_inputs = train_sampled['sent_embeddings'].values
+      val_inputs=val['sent_embeddings']
+      test_inputs=test['sent_embeddings']
 
   ##if only topics are selected
-  if (topics==True and entities==False and triples==False and sents==False):
+  if (topics==True and entities==False and triples==False):
     train_inputs = train_sampled['topic_probs'].values
     val_inputs = val['topic_probs'].values
     test_inputs = test['topic_probs'].values
 
   ##if only entities are selected
-  elif (entities==True and topics==False and triples==False and sents==False):
+  elif (entities==True and topics==False and triples==False):
     train_inputs = train_sampled['entities_text'].values
     train_inputs = tokenizer.texts_to_sequences(train_inputs)
     train_inputs = pad_sequences(train_inputs, maxlen=ENTITIES_LEN)
@@ -92,12 +101,8 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
     test_inputs = pad_sequences(test_inputs, maxlen=ENTITIES_LEN)
 
   ##if only triples are selected
-  elif (triples==True and topics==False and entities==False and sents==False):
-    if(embedding=='sentences'):
-      train_inputs = train_sampled['triple_sent_embeddings'].values
-      val_inputs=val['triple_sent_embeddings']
-      test_inputs=test['triple_sent_embeddings']
-    else:
+  elif (triples==True and topics==False and entities==False):
+    if(embedding == GLOVE_EMBEDDINGS):
       train_inputs = train_sampled[triple_col].values
       train_inputs = tokenizer.texts_to_sequences(train_inputs)
       train_inputs = pad_sequences(train_inputs, maxlen=TRIPLES_LEN)
@@ -107,12 +112,11 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
       test_inputs = test[triple_col].values
       test_inputs = tokenizer.texts_to_sequences(test_inputs)
       test_inputs = pad_sequences(test_inputs, maxlen=TRIPLES_LEN)
-  
-  ##if only sentence embeddings are selected
-  elif (triples==False and topics==False and entities==False and sents==True):
-    train_inputs = train_sampled['sent_embeddings'].values
-    val_inputs=val['sent_embeddings']
-    test_inputs=test['sent_embeddings']
+    elif(embedding==SENTENCE_EMBEDDINGS):
+      train_inputs = train_sampled['triple_sent_embeddings'].values
+      val_inputs=val['triple_sent_embeddings']
+      test_inputs=test['triple_sent_embeddings']
+
   if(count==1):
     train_inputs = typeConv(train_inputs)
     val_inputs = typeConv(val_inputs)
@@ -124,34 +128,35 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
     test_inputs = []
 
     if (text):
-      train_text_inputs=train_sampled['text'].values
-      train_text_inputs = tokenizer.texts_to_sequences(train_text_inputs)
-      train_text_inputs = pad_sequences(train_text_inputs, maxlen=TEXT_LEN)
-      train_text_inputs = typeConv(train_text_inputs)
-      train_inputs.append(train_text_inputs)
+      if(embedding==GLOVE_EMBEDDINGS):
+        train_text_inputs=train_sampled['text'].values
+        train_text_inputs = tokenizer.texts_to_sequences(train_text_inputs)
+        train_text_inputs = pad_sequences(train_text_inputs, maxlen=TEXT_LEN)
+        train_text_inputs = typeConv(train_text_inputs)
+        train_inputs.append(train_text_inputs)
 
-      val_text_inputs=val['text'].values
-      val_text_inputs = tokenizer.texts_to_sequences(val_text_inputs)
-      val_text_inputs = pad_sequences(val_text_inputs, maxlen=TEXT_LEN)
-      val_text_inputs = typeConv(val_text_inputs)
-      val_inputs.append(val_text_inputs)
+        val_text_inputs=val['text'].values
+        val_text_inputs = tokenizer.texts_to_sequences(val_text_inputs)
+        val_text_inputs = pad_sequences(val_text_inputs, maxlen=TEXT_LEN)
+        val_text_inputs = typeConv(val_text_inputs)
+        val_inputs.append(val_text_inputs)
 
-      test_text_inputs=test['text'].values
-      test_text_inputs = tokenizer.texts_to_sequences(test_text_inputs)
-      test_text_inputs = pad_sequences(test_text_inputs, maxlen=TEXT_LEN)
-      test_text_inputs = typeConv(test_text_inputs)
-      test_inputs.append(test_text_inputs)
+        test_text_inputs=test['text'].values
+        test_text_inputs = tokenizer.texts_to_sequences(test_text_inputs)
+        test_text_inputs = pad_sequences(test_text_inputs, maxlen=TEXT_LEN)
+        test_text_inputs = typeConv(test_text_inputs)
+        test_inputs.append(test_text_inputs)
 
-    if (sents):
-      train_sents_inputs=train_sampled['sent_embeddings'].values
-      train_sents_inputs = typeConv(train_sents_inputs)
-      train_inputs.append(train_sents_inputs)
-      val_sents_inputs=val['sent_embeddings'].values
-      val_sents_inputs = typeConv(val_sents_inputs)
-      val_inputs.append(val_sents_inputs)
-      test_sents_inputs=test['sent_embeddings'].values
-      test_sents_inputs = typeConv(test_sents_inputs)
-      test_inputs.append(test_sents_inputs)
+      elif (embedding==SENTENCE_EMBEDDINGS):
+        train_sents_inputs=train_sampled['sent_embeddings'].values
+        train_sents_inputs = typeConv(train_sents_inputs)
+        train_inputs.append(train_sents_inputs)
+        val_sents_inputs=val['sent_embeddings'].values
+        val_sents_inputs = typeConv(val_sents_inputs)
+        val_inputs.append(val_sents_inputs)
+        test_sents_inputs=test['sent_embeddings'].values
+        test_sents_inputs = typeConv(test_sents_inputs)
+        test_inputs.append(test_sents_inputs)
 
     if (topics):
       train_topic_inputs=train_sampled['topic_probs'].values
@@ -185,17 +190,7 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
       test_inputs.append(test_entity_inputs)
 
     if (triples):
-      if(embedding=='sentences'):
-        train_sents_inputs=train_sampled['triple_sent_embeddings'].values
-        train_sents_inputs = typeConv(train_sents_inputs)
-        train_inputs.append(train_sents_inputs)
-        val_sents_inputs=val['triple_sent_embeddings'].values
-        val_sents_inputs = typeConv(val_sents_inputs)
-        val_inputs.append(val_sents_inputs)
-        test_sents_inputs=test['triple_sent_embeddings'].values
-        test_sents_inputs = typeConv(test_sents_inputs)
-        test_inputs.append(test_sents_inputs)
-      else:
+      if (embedding==GLOVE_EMBEDDINGS):
         train_triple_inputs=train_sampled[triple_col].values
         train_triple_inputs = tokenizer.texts_to_sequences(train_triple_inputs)
         train_triple_inputs = pad_sequences(train_triple_inputs, maxlen=TRIPLES_LEN)
@@ -213,17 +208,27 @@ def generate_model(epochs, batch_size,sents=False, topics=False, entities=False,
         test_triple_inputs = pad_sequences(test_triple_inputs, maxlen=TRIPLES_LEN)
         test_triple_inputs = typeConv(test_triple_inputs)
         test_inputs.append(test_triple_inputs)
+      elif(embedding==SENTENCE_EMBEDDINGS):
+        train_sents_inputs=train_sampled['triple_sent_embeddings'].values
+        train_sents_inputs = typeConv(train_sents_inputs)
+        train_inputs.append(train_sents_inputs)
+        val_sents_inputs=val['triple_sent_embeddings'].values
+        val_sents_inputs = typeConv(val_sents_inputs)
+        val_inputs.append(val_sents_inputs)
+        test_sents_inputs=test['triple_sent_embeddings'].values
+        test_sents_inputs = typeConv(test_sents_inputs)
+        test_inputs.append(test_sents_inputs)        
       
   train_result = tf.keras.utils.to_categorical(train_sampled['relevance'], num_classes=LABELS)
   val_result = tf.keras.utils.to_categorical(val['relevance'], num_classes=LABELS)
   test_result = tf.keras.utils.to_categorical(test['relevance'], num_classes=LABELS)
 
-  model=model_making(count, embedding_matrix, sents=sents,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False, embedding=embedding, num_labels=LABELS)
+  model=model_making(count, embedding_matrix,topics=topics, entities=entities, triples=triples, text=text, fine_tune=False, embedding=embedding, num_labels=LABELS)
   
-  es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=10, restore_best_weights=True)
-  if(sents==True or embedding=='sentences'):
+  if(embedding==SENTENCE_EMBEDDINGS):
     model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']))
   else:
+    es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', min_delta=0.001, patience=10, restore_best_weights=True)
     model.fit(train_inputs,train_sampled['relevance'],epochs=epochs,batch_size=batch_size,validation_data=(val_inputs, val['relevance']), callbacks=[es])
   tf.keras.utils.plot_model(model, to_file='model_plots/'+name+'.png', show_shapes=True, show_layer_names=True)
   
@@ -267,11 +272,11 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()   
   parser.add_argument('--dataset', required=True, help="Dataset required")
   parser.add_argument('--model', required=True, help="Choose a model name")
-  parser.add_argument('--embedding', help="Choose an embedding")
+  parser.add_argument('--embedding', default=GLOVE_EMBEDDINGS,help="Choose an embedding")
   
   args = parser.parse_args()
 
-  print(f'{args.dataset} selected')
+  
 
   if args.dataset=='energyhub':
     filename = 'EH_infersents'
@@ -284,6 +289,11 @@ if __name__ == "__main__":
     sys.exit()
 
   model_name = args.model
+
+  print(f'{args.embedding} selected')
+  print(f'{args.dataset} selected')
+  print(f'{args.model} selected')
+  name=args.dataset
 
 
   print ("Reading Data")
@@ -336,43 +346,36 @@ if __name__ == "__main__":
     #print (train_sampled)
   else:
     train_sampled=train
-    
 
-  if (model_name=='sents'):
-    model_text = generate_model(epochs=300, batch_size=32,sents=True)
-  elif (model_name=='text'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True)
+  epochs=140
+  if(args.embedding==GLOVE_EMBEDDINGS):
+    epochs=140
+  elif(args.embedding==SENTENCE_EMBEDDINGS):
+    epochs=300
+
+  if (model_name=='text'):
+    model_text = generate_model(epochs=epochs, batch_size=32,text=True, embedding=args.embedding, name=args.dataset)
   elif (model_name=='topics'):
-    model_text = generate_model(epochs=140, batch_size=32,topics=True)
+    model_text = generate_model(epochs=epochs, batch_size=32,topics=True, embedding=args.embedding, name=args.dataset)
   elif (model_name=='entities'):
-    model_text = generate_model(epochs=140, batch_size=32,entities=True)
-  elif (model_name=='triples' and args.embedding== None):
-    model_text = generate_model(epochs=140, batch_size=32,triples=True)
-  elif (model_name=='text_triples'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True, triples=True)
-  elif (model_name=='text_topics'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True)
-  elif (model_name=='text_entities'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True, entities=True)
-  elif (model_name=='text_topics_entities'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True, topics=True, entities=True)
-  elif (model_name=='text_topics_triples'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True, triples=True, topics=True)
-  elif (model_name=='text_entities_triples'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True, triples=True, entities=True)
-  elif (model_name=='text_topics_entities_triples'):
-    model_text = generate_model(epochs=140, batch_size=32,text=True, entities=True, triples=True, topics=True)
-
+    model_text = generate_model(epochs=epochs, batch_size=32,entities=True, embedding=args.embedding, name=args.dataset)
   elif (model_name=='triples'):
-    model_text = generate_model(epochs=300, batch_size=32,triples=True, embedding=args.embedding)
-  elif (model_name=='sents_topics'):
-    model_text = generate_model(epochs=300, batch_size=32,sents=True, topics=True)
-  elif (model_name=='sents_entities'):
-    model_text = generate_model(epochs=300, batch_size=32,sents=True, entities=True)
-  elif (model_name=='sents_triples'):
-    model_text = generate_model(epochs=300, batch_size=32,sents=True, triples=True, embedding=args.embedding)
-  elif (model_name=='sents_topics_triples'):
-    model_text = generate_model(epochs=300, batch_size=32,sents=True, topics=True, triples=True, embedding=args.embedding)
+    model_text = generate_model(epochs=epochs, batch_size=32,triples=True, embedding=args.embedding, name=args.dataset)
+  elif (model_name=='text_triples'):
+    model_text = generate_model(epochs=epochs, batch_size=32,text=True, triples=True, embedding=args.embedding, name=args.dataset)
+  elif (model_name=='text_topics'):
+    model_text = generate_model(epochs=epochs, batch_size=32,text=True, topics=True, embedding=args.embedding, name=args.dataset)
+  elif (model_name=='text_entities'):
+    model_text = generate_model(epochs=epochs, batch_size=32,text=True, entities=True, embedding=args.embedding, name=args.dataset)
+  elif (model_name=='text_topics_entities'):
+    model_text = generate_model(epochs=epochs, batch_size=32,text=True, topics=True, entities=True, embedding=args.embedding, name=args.dataset)
+  elif (model_name=='text_topics_triples'):
+    model_text = generate_model(epochs=epochs, batch_size=32,text=True, triples=True, topics=True, embedding=args.embedding, name=args.dataset)
+  elif (model_name=='text_entities_triples'):
+    model_text = generate_model(epochs=epochs, batch_size=32,text=True, triples=True, entities=True, embedding=args.embedding, name=args.dataset)
+  elif (model_name=='text_topics_entities_triples'):
+    model_text = generate_model(epochs=epochs, batch_size=32,text=True, entities=True, triples=True, topics=True, embedding=args.embedding, name=args.dataset)
+
   else:
     print ("Wrong model selected")
 
