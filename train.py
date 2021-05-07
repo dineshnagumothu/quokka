@@ -347,11 +347,7 @@ if __name__ == "__main__":
   else:
     train_sampled=train
 
-  epochs=140
-  if(args.embedding==GLOVE_EMBEDDINGS):
-    epochs=140
-  elif(args.embedding==SENTENCE_EMBEDDINGS):
-    epochs=300
+  epochs=300
 
   if (model_name=='text'):
     model_text = generate_model(epochs=epochs, batch_size=32,text=True, embedding=args.embedding, name=args.dataset)
